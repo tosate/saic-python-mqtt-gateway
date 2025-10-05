@@ -123,6 +123,7 @@ The key-value pairs in the JSON express the following:
 | chargeStateTopic      | topic indicating the charge state - **required**                                                  |
 | chargingValue         | payload that indicates the charging - **required**                                                |
 | socTopic              | topic where the gateway publishes the SoC for the charging station - optional                     |
+| socTsTopic            | topic where the gateway publishes the SoC timestamp for the charging station - optional           |
 | rangeTopic            | topic where the gateway publishes the range for the charging station - optional                   |
 | chargerConnectedTopic | topic indicating that the vehicle is connected to the charging station - optional                 |
 | chargerConnectedValue | payload that indicates that the charger is connected - optional                                   |

@@ -550,10 +550,15 @@ def __process_charging_stations_file(config: Configuration, json_file: str) -> N
             for item in data:
                 charge_state_topic = item["chargeStateTopic"]
                 charging_value = item["chargingValue"]
+                soc_ts_topic = item.get("socTsTopic", None)
                 vin = item["vin"]
                 if "socTopic" in item:
                     charging_station = ChargingStation(
-                        vin, charge_state_topic, charging_value, item["socTopic"]
+                        vin,
+                        charge_state_topic,
+                        charging_value,
+                        item["socTopic"],
+                        soc_ts_topic,
                     )
                 else:
                     charging_station = ChargingStation(
