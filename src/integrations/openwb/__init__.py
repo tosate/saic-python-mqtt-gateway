@@ -40,7 +40,7 @@ class OpenWBIntegration:
             vehicle_status, charge_status
         )
         if electric_range is not None and range_topic is not None:
-            LOG.info("OpenWB Integration published range to %f", range_topic)
+            LOG.info("OpenWB Integration published range to %s", range_topic)
             self.__publisher.publish_float(
                 key=range_topic,
                 value=electric_range,
