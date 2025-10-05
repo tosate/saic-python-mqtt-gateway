@@ -8,11 +8,13 @@ class ChargingStation:
         charge_state_topic: str,
         charging_value: str,
         soc_topic: str | None = None,
+        soc_ts_topic: str | None = None
     ) -> None:
         self.vin: str = vin
         self.charge_state_topic: str = charge_state_topic
         self.charging_value: str = charging_value
         self.soc_topic: str | None = soc_topic
+        self.soc_ts_topic: str | None = soc_ts_topic
         self.range_topic: str | None = None
         self.connected_topic: str | None = None
         self.connected_value: str | None = None

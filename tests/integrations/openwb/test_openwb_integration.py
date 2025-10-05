@@ -25,6 +25,7 @@ from vehicle_info import VehicleInfo
 RANGE_TOPIC = "/mock/range"
 CHARGE_STATE_TOPIC = "/mock/charge/state"
 SOC_TOPIC = "/mock/soc/state"
+SOC_TS_TOPIC = "/mock/soc/timestamp"
 CHARGING_VALUE = "VehicleIsCharging"
 
 
@@ -46,6 +47,7 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
             charge_state_topic=CHARGE_STATE_TOPIC,
             charging_value=CHARGING_VALUE,
             soc_topic=SOC_TOPIC,
+            soc_ts_topic=SOC_TS_TOPIC,
         )
         charging_station.range_topic = RANGE_TOPIC
         self.openwb_integration = OpenWBIntegration(
@@ -64,6 +66,10 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
         self.assert_mqtt_topic(
             SOC_TOPIC,
             float(DRIVETRAIN_SOC_VEHICLE),
+        )
+        self.assert_mqtt_topic(
+            SOC_TS_TOPIC,
+            int,  # We just check that it's an int, the exact value is time-dependent
         )
         self.assert_mqtt_topic(
             RANGE_TOPIC,

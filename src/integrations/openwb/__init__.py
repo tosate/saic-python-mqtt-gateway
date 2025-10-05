@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import logging
 from typing import TYPE_CHECKING
 
@@ -54,5 +55,15 @@ class OpenWBIntegration:
             self.__publisher.publish_float(
                 key=soc_topic,
                 value=soc,
+                no_prefix=True,
+            )
+
+        soc_ts_topic = self.__charging_station.soc_ts_topic
+        soc_ts = int(datetime.datetime.now().timestamp())
+        if soc_ts_topic is not None:
+            LOG.info("OpenWB Integration publisehd SoC timestamp to %s", soc_ts_topic)
+            self.__publisher.publish_int(
+                key=soc_ts_topic,
+                value=soc_ts,
                 no_prefix=True,
             )
