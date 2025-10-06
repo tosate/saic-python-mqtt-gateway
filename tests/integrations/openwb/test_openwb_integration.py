@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 import unittest
 
 from apscheduler.schedulers.blocking import BlockingScheduler
+from freezegun import freeze_time
 import pytest
 from saic_ismart_client_ng.api.vehicle.schema import VinInfo
 
@@ -55,6 +57,7 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
             publisher=self.publisher,
         )
 
+    @freeze_time("2025-01-01 12:00:00")
     async def test_update_soc_with_no_bms_data(self) -> None:
         vehicle_status_resp = get_mock_vehicle_status_resp()
         result = self.vehicle_state.handle_vehicle_status(vehicle_status_resp)
@@ -69,7 +72,7 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
         )
         self.assert_mqtt_topic(
             SOC_TS_TOPIC,
-            int,  # We just check that it's an int, the exact value is time-dependent
+            int(datetime(2025, 1, 1, 12, 0, 0).timestamp())
         )
         self.assert_mqtt_topic(
             RANGE_TOPIC,
@@ -77,10 +80,12 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
         )
         expected_topics = {
             SOC_TOPIC,
+            SOC_TS_TOPIC,
             RANGE_TOPIC,
         }
         assert expected_topics == set(self.publisher.map.keys())
 
+    @freeze_time("2025-01-01 12:00:00")
     async def test_update_soc_with_bms_data(self) -> None:
         vehicle_status_resp = get_mock_vehicle_status_resp()
         chrg_mgmt_data_resp = get_mock_charge_management_data_resp()
@@ -104,8 +109,13 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
             RANGE_TOPIC,
             DRIVETRAIN_RANGE_BMS,
         )
+        self.assert_mqtt_topic(
+            SOC_TS_TOPIC,
+            int(datetime(2025, 1, 1, 12, 0, 0).timestamp())
+        )
         expected_topics = {
             SOC_TOPIC,
+            SOC_TS_TOPIC,
             RANGE_TOPIC,
         }
         assert expected_topics == set(self.publisher.map.keys())
