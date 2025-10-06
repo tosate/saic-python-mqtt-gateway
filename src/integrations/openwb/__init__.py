@@ -61,7 +61,7 @@ class OpenWBIntegration:
         soc_ts_topic = self.__charging_station.soc_ts_topic
         soc_ts = int(datetime.datetime.now().timestamp())
         if soc_ts_topic is not None:
-            LOG.info("OpenWB Integration publisehd SoC timestamp to %s", soc_ts_topic)
+            LOG.info("OpenWB Integration published SoC timestamp to %s", soc_ts_topic)
             self.__publisher.publish_int(
                 key=soc_ts_topic,
                 value=soc_ts,
