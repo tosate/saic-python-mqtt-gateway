@@ -20,7 +20,7 @@ from publisher.core import MqttCommandListener, Publisher
 from publisher.log_publisher import ConsolePublisher
 from publisher.mqtt_publisher import MqttPublisher
 from saic_api_listener import MqttGatewaySaicApiListener
-from vehicle import VehicleState
+from vehicle import RefreshMode, VehicleState
 from vehicle_info import VehicleInfo
 
 if TYPE_CHECKING:
@@ -206,6 +206,16 @@ class MqttGateway(MqttCommandListener, VehicleHandlerLocator):
             vehicle_handler.vehicle_state.set_is_charging(True)
         else:
             LOG.debug(f"Charging detected for unknown vin {vin}")
+
+    @override
+    async def on_charging_station_energy_imported(
+        self, vin: str, energy: float
+    ) -> None:
+        vehicle_handler = self.get_vehicle_handler(vin)
+        if vehicle_handler:
+            await vehicle_handler.handle_charging_station_energy_imported(energy)
+        else:
+            LOG.debug(f"Imported energy for unknown vin {vin} received")
 
     @override
     async def on_mqtt_global_command_received(

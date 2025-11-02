@@ -8,13 +8,18 @@ class ChargingStation:
         charge_state_topic: str,
         charging_value: str,
         soc_topic: str | None = None,
-        soc_ts_topic: str | None = None
+        soc_ts_topic: str | None = None,
+        range_topic: str | None = None,
+        connected_topic: str | None = None,
+        connected_value: str | None = None,
+        imported_energy_topic: str | None = None,
     ) -> None:
         self.vin: str = vin
         self.charge_state_topic: str = charge_state_topic
         self.charging_value: str = charging_value
         self.soc_topic: str | None = soc_topic
         self.soc_ts_topic: str | None = soc_ts_topic
-        self.range_topic: str | None = None
-        self.connected_topic: str | None = None
-        self.connected_value: str | None = None
+        self.range_topic: str | None = range_topic
+        self.connected_topic: str | None = connected_topic
+        self.connected_value: str | None = connected_value
+        self.imported_energy_topic: str | None = imported_energy_topic

@@ -17,6 +17,7 @@ from integrations.osmand.api import OsmAndApi
 import mqtt_topics
 from saic_api_listener import MqttGatewayAbrpListener, MqttGatewayOsmAndListener
 from status_publisher.vehicle_info import VehicleInfoPublisher
+from vehicle import RefreshMode
 
 if TYPE_CHECKING:
     from saic_ismart_client_ng import SaicApi
@@ -308,6 +309,18 @@ class VehicleHandler:
             return HomeAssistantDiscovery(vehicle_state, vin_info, config)
         return None
 
+    async def handle_charging_station_energy_imported(self, energy: float) -> None:
+        if self.openwb_integration is None:
+            return
+        if self.openwb_integration.should_refresh_by_imported_energy(
+            energy, self.vehicle_state.charge_polling_min_percent, self.vin_info.vin
+        ):
+            LOG.info(
+                f"Triggering refresh due to imported energy {energy} Wh for vehicle {self.vin_info.vin}"
+            )
+            self.vehicle_state.set_refresh_mode(
+                RefreshMode.Force, "imported energy threshold reached"
+            )
 
 class VehicleHandlerLocator(ABC):
     def get_vehicle_handler(self, vin: str) -> VehicleHandler | None:

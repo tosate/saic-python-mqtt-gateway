@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import math
 from typing import Any
 import unittest
 
@@ -29,6 +30,11 @@ CHARGE_STATE_TOPIC = "/mock/charge/state"
 SOC_TOPIC = "/mock/soc/state"
 SOC_TS_TOPIC = "/mock/soc/timestamp"
 CHARGING_VALUE = "VehicleIsCharging"
+IMPORTED_ENERGY_TOPIC = "/mock/imported_energy"
+CAR_CAPACITY_KWH = 50.0
+CHARGE_POLLING_MIN_PERCENT = 5.0
+ENERGY_PER_PERCENT = CAR_CAPACITY_KWH * 1000.0 / 100.0
+ENERGY_FOR_MIN_PCT = math.ceil(CHARGE_POLLING_MIN_PERCENT * ENERGY_PER_PERCENT)
 
 
 class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
@@ -50,8 +56,8 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
             charging_value=CHARGING_VALUE,
             soc_topic=SOC_TOPIC,
             soc_ts_topic=SOC_TS_TOPIC,
+            range_topic=RANGE_TOPIC,
         )
-        charging_station.range_topic = RANGE_TOPIC
         self.openwb_integration = OpenWBIntegration(
             charging_station=charging_station,
             publisher=self.publisher,
@@ -71,8 +77,7 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
             float(DRIVETRAIN_SOC_VEHICLE),
         )
         self.assert_mqtt_topic(
-            SOC_TS_TOPIC,
-            int(datetime(2025, 1, 1, 12, 0, 0).timestamp())
+            SOC_TS_TOPIC, int(datetime(2025, 1, 1, 12, 0, 0).timestamp())
         )
         self.assert_mqtt_topic(
             RANGE_TOPIC,
@@ -110,8 +115,7 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
             DRIVETRAIN_RANGE_BMS,
         )
         self.assert_mqtt_topic(
-            SOC_TS_TOPIC,
-            int(datetime(2025, 1, 1, 12, 0, 0).timestamp())
+            SOC_TS_TOPIC, int(datetime(2025, 1, 1, 12, 0, 0).timestamp())
         )
         expected_topics = {
             SOC_TOPIC,
@@ -119,6 +123,85 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
             RANGE_TOPIC,
         }
         assert expected_topics == set(self.publisher.map.keys())
+
+    async def test_imported_energy_initial_threshold_set(self) -> None:
+        """Initial call should set the first threshold but not trigger a refresh."""
+        imported_energy = 1000.0  # 1 kWh
+
+        self.openwb_integration.real_total_battery_capacity = CAR_CAPACITY_KWH
+        self.openwb_integration.computed_refresh_by_imported_energy_wh = None
+
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            imported_energy, CHARGE_POLLING_MIN_PERCENT, VIN
+        )
+
+        assert not should_refresh, "Initial call should not trigger refresh"
+        assert (
+            self.openwb_integration.computed_refresh_by_imported_energy_wh is not None
+        ), "Initial threshold should be computed and stored"
+
+    async def test_imported_energy_threshold_reached_triggers_refresh(self) -> None:
+        """When imported energy increases beyond threshold, refresh should trigger."""
+        imported_energy_start = 1000.0  # 1 kWh
+        threshold_wh = imported_energy_start + ENERGY_FOR_MIN_PCT
+
+        self.openwb_integration.real_total_battery_capacity = CAR_CAPACITY_KWH
+        self.openwb_integration.computed_refresh_by_imported_energy_wh = threshold_wh
+
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            threshold_wh, CHARGE_POLLING_MIN_PERCENT, VIN
+        )
+
+        assert should_refresh, "Refresh should trigger when threshold is reached"
+
+    async def test_imported_energy_no_refresh_before_threshold(self) -> None:
+        """Should not trigger refresh before threshold is reached."""
+        imported_energy_wh = 1000.0  # 1 kWh
+        threshold_wh = imported_energy_wh + ENERGY_FOR_MIN_PCT
+
+        self.openwb_integration.real_total_battery_capacity = CAR_CAPACITY_KWH
+        self.openwb_integration.computed_refresh_by_imported_energy_wh = threshold_wh
+
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            imported_energy_wh + (ENERGY_FOR_MIN_PCT / 2),
+            CHARGE_POLLING_MIN_PERCENT,
+            VIN,
+        )
+
+        assert not should_refresh, (
+            "Should not refresh before threshold is fully reached"
+        )
+
+    async def test_imported_energy_updates_next_threshold(self) -> None:
+        """After refresh, a new threshold should be calculated."""
+        imported_energy_wh = 1000.0  # 1 kWh
+
+        self.openwb_integration.real_total_battery_capacity = CAR_CAPACITY_KWH
+        self.openwb_integration.computed_refresh_by_imported_energy_wh = imported_energy_wh
+
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            imported_energy_wh + ENERGY_FOR_MIN_PCT,
+            CHARGE_POLLING_MIN_PERCENT,
+            VIN,
+        )
+
+        assert should_refresh, "Refresh should be triggered at the threshold"
+        assert (
+            self.openwb_integration.computed_refresh_by_imported_energy_wh
+            == imported_energy_wh + ENERGY_FOR_MIN_PCT * 2
+        ), "Next threshold should be correctly updated"
+
+    async def test_imported_energy_missing_battery_capacity(self) -> None:
+        """If no battery capacity is known, refresh calculation should be skipped."""
+        self.openwb_integration.real_total_battery_capacity = None
+
+        result = self.openwb_integration.should_refresh_by_imported_energy(
+            imported_energy_wh=1000.0,
+            charge_polling_min_percent=CHARGE_POLLING_MIN_PERCENT,
+            vin=VIN,
+        )
+
+        assert not result, "Should not refresh if capacity is unknown"
 
     def assert_mqtt_topic(self, topic: str, value: Any) -> None:
         mqtt_map = self.publisher.map

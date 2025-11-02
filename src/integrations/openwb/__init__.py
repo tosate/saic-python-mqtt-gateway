@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import math
 from typing import TYPE_CHECKING
 
 import extractors
@@ -30,12 +31,17 @@ class OpenWBIntegration:
     ) -> None:
         self.__charging_station = charging_station
         self.__publisher = publisher
+        self.real_total_battery_capacity: float | None = None
+        self.last_imported_energy_wh: float | None = None
+        self.computed_refresh_by_imported_energy_wh: float | None = None
 
     def update_openwb(
         self,
         vehicle_status: VehicleStatusRespProcessingResult,
         charge_status: ChrgMgmtDataRespProcessingResult | None,
     ) -> None:
+        if charge_status:
+            self.real_total_battery_capacity = charge_status.real_total_battery_capacity
         range_topic = self.__charging_station.range_topic
         electric_range = extractors.extract_electric_range(
             vehicle_status, charge_status
@@ -67,3 +73,56 @@ class OpenWBIntegration:
                 value=soc_ts,
                 no_prefix=True,
             )
+
+    def should_refresh_by_imported_energy(
+        self, imported_energy_wh: float, charge_polling_min_percent: float, vin: str
+    ) -> bool:
+        """Determine whether the vehicle status should be refreshed based on the imported energy since the last refresh.
+
+        Returns True if a refresh should be triggered, False otherwise.
+        """
+        # Return False if battery capacity is not available
+        if self.real_total_battery_capacity is None:
+            LOG.warning(
+                "Battery capacity not available. Cannot calculate energy per percent."
+            )
+            return False
+
+        # Calculate the energy corresponding to 1% of the battery in Wh
+        energy_per_percent = (self.real_total_battery_capacity * 1000) / 100.0
+
+        # Minimum energy threshold for triggering a refresh
+        energy_for_min_pct = math.ceil(charge_polling_min_percent * energy_per_percent)
+
+        # Initialize the refresh threshold if it hasn't been set yet
+        if not self.computed_refresh_by_imported_energy_wh:
+            self.computed_refresh_by_imported_energy_wh = (
+                imported_energy_wh + energy_for_min_pct
+            )
+            LOG.debug(
+                f"Initial imported energy threshold for vehicle {vin} set to "
+                f"{self.computed_refresh_by_imported_energy_wh} Wh"
+            )
+
+        # Check if the imported energy exceeds the threshold
+        refresh_needed = False
+        if imported_energy_wh >= self.computed_refresh_by_imported_energy_wh:
+            LOG.info(
+                f"Imported energy threshold of {self.computed_refresh_by_imported_energy_wh} Wh reached "
+                f"(current: {imported_energy_wh} Wh). Triggering vehicle refresh."
+            )
+            refresh_needed = True
+
+            # Calculate the next threshold
+            self.computed_refresh_by_imported_energy_wh = (
+                imported_energy_wh + energy_for_min_pct
+            )
+            LOG.debug(
+                f"Next imported energy threshold for vehicle {vin} set to "
+                f"{self.computed_refresh_by_imported_energy_wh} Wh"
+            )
+
+        # Save the last imported energy value
+        self.last_imported_energy_wh = imported_energy_wh
+
+        return refresh_needed

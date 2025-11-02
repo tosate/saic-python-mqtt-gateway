@@ -7,6 +7,7 @@
         "rangeTopic": "openWB/set/mqtt/vehicle/2/get/range",
         "chargerConnectedTopic": "openWB/chargepoint/2/get/plug_state",
         "chargerConnectedValue": "true",
+        "importedEnergyTopic": "openWB/chargepoint/2/get/daily_imported",
         "vin": "vin1"
     },
     {
@@ -17,6 +18,7 @@
         "rangeTopic": "openWB/set/mqtt/vehicle/3/get/range",
         "chargerConnectedTopic": "openWB/chargepoint/3/get/plug_state",
         "chargerConnectedValue": "true",
+        "importedEnergyTopic": "openWB/chargepoint/2/get/daily_imported",
         "vin": "vin2"
     }
 ]

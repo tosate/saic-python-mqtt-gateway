@@ -566,6 +566,8 @@ def __process_charging_stations_file(config: Configuration, json_file: str) -> N
                     charging_station.connected_topic = item["chargerConnectedTopic"]
                 if "chargerConnectedValue" in item:
                     charging_station.connected_value = item["chargerConnectedValue"]
+                if "importedEnergyTopic" in item:
+                    charging_station.imported_energy_topic = item["importedEnergyTopic"]
                 config.charging_stations_by_vin[vin] = charging_station
     except FileNotFoundError:
         LOG.warning(f"File {json_file} does not exist")

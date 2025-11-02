@@ -30,6 +30,12 @@ class MqttCommandListener(ABC):
     ) -> None:
         raise NotImplementedError("Should have implemented this")
 
+    @abstractmethod
+    async def on_charging_station_energy_imported(
+        self, vin: str, energy: float
+    ) -> None:
+        raise NotImplementedError("Should have implemented this")
+
 
 class Publisher(ABC):
     def __init__(self, config: Configuration) -> None:

@@ -26,6 +26,7 @@ class MqttPublisher(Publisher):
         self.vin_by_charge_state_topic: dict[str, str] = {}
         self.last_charge_state_by_vin: dict[str, str] = {}
         self.vin_by_charger_connected_topic: dict[str, str] = {}
+        self.vin_by_imported_energy_topic: dict[str, str] = {}
         self.first_connection = True
 
         mqtt_client = gmqtt.Client(
@@ -127,6 +128,14 @@ class MqttPublisher(Publisher):
                     charging_station.connected_topic
                 ] = charging_station.vin
                 self.client.subscribe(charging_station.connected_topic)
+            if charging_station.imported_energy_topic:
+                LOG.debug(
+                    f"Subscribing to MQTT topic {charging_station.daily_imported_topic}"
+                )
+                self.vin_by_imported_energy_topic[
+                    charging_station.imported_energy_topic
+                ] = charging_station.vin
+                self.client.subscribe(charging_station.daily_imported_topic)
         if self.configuration.ha_discovery_enabled:
             # enable dynamic discovery pushing in case ha reconnects
             self.client.subscribe(self.configuration.ha_lwt_topic)
@@ -165,6 +174,14 @@ class MqttPublisher(Publisher):
             else:
                 LOG.debug(
                     f"Vehicle with vin {vin} is disconnected from its charging station"
+                )
+        elif topic in self.vin_by_imported_energy_topic:
+            LOG.debug(f"Received message over topic {topic} with payload {payload}")
+            vin = self.vin_by_imported_energy_topic[topic]
+            LOG.info(f"Received imported energy message for vehicle with vin {vin}")
+            if self.command_listener is not None:
+                await self.command_listener.on_charging_station_energy_imported(
+                    vin, float(payload)
                 )
         elif topic == self.configuration.ha_lwt_topic:
             if self.command_listener is not None:
