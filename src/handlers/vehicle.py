@@ -319,7 +319,7 @@ class VehicleHandler:
                 f"Triggering refresh due to imported energy {energy} Wh for vehicle {self.vin_info.vin}"
             )
             self.vehicle_state.set_refresh_mode(
-                RefreshMode.Force, "imported energy threshold reached"
+                RefreshMode.FORCE, "imported energy threshold reached"
             )
 
 class VehicleHandlerLocator(ABC):
