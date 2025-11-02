@@ -228,7 +228,7 @@ class MqttGateway(MqttCommandListener, VehicleHandlerLocator):
 
         integration = vehicle_handler.openwb_integration
         if integration:
-            integration.set_charger_connection_state(connected)
+            integration.set_charger_connection_state(connected, vin)
             LOG.debug(f"Updated connected state for vehicle {vin} to {connected}")
 
     @override

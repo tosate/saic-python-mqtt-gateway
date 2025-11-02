@@ -75,16 +75,16 @@ class OpenWBIntegration:
                 no_prefix=True,
             )
 
-    def set_charger_connection_state(self, connected: bool) -> None:
+    def set_charger_connection_state(self, connected: bool, vin: str) -> None:
         if self.charger_connected == connected:
             # No change, do nothing
             return
 
         self.charger_connected = connected
         if self.charger_connected:
-            LOG.info("OpenWB Integration: Charger connected")
+            LOG.info("OpenWB Integration: Charger connected to vehicle %s", vin)
         else:
-            LOG.info("OpenWB Integration: Charger disconnected")
+            LOG.info("OpenWB Integration: Charger disconnected from vehicle %s", vin)
 
     def should_refresh_by_imported_energy(
         self, imported_energy_wh: float, charge_polling_min_percent: float, vin: str
