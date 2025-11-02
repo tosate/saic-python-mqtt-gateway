@@ -77,9 +77,11 @@ class OpenWBIntegration:
     def should_refresh_by_imported_energy(
         self, imported_energy_wh: float, charge_polling_min_percent: float, vin: str
     ) -> bool:
-        """Determine whether the vehicle status should be refreshed based on the imported energy since the last refresh.
+        """Determine if the vehicle status should be refreshed based on imported energy.
 
-        Returns True if a refresh should be triggered, False otherwise.
+        The method triggers a refresh if the imported energy since the last refresh
+        exceeds a threshold based on battery capacity and a minimum percentage.
+        If the imported energy decreases (e.g., daily reset), the threshold is recalculated.
         """
         # Return False if battery capacity is not available
         if self.real_total_battery_capacity is None:
@@ -95,12 +97,15 @@ class OpenWBIntegration:
         energy_for_min_pct = math.ceil(charge_polling_min_percent * energy_per_percent)
 
         # Initialize the refresh threshold if it hasn't been set yet
-        if not self.computed_refresh_by_imported_energy_wh:
+        if (
+            not self.computed_refresh_by_imported_energy_wh
+            or imported_energy_wh < (self.last_imported_energy_wh or 0)
+        ):
             self.computed_refresh_by_imported_energy_wh = (
                 imported_energy_wh + energy_for_min_pct
             )
             LOG.debug(
-                f"Initial imported energy threshold for vehicle {vin} set to "
+                f"Initial or reset threshold for vehicle {vin} set to "
                 f"{self.computed_refresh_by_imported_energy_wh} Wh"
             )
 
@@ -124,5 +129,4 @@ class OpenWBIntegration:
 
         # Save the last imported energy value
         self.last_imported_energy_wh = imported_energy_wh
-
         return refresh_needed

@@ -203,6 +203,43 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
 
         assert not result, "Should not refresh if capacity is unknown"
 
+    async def test_imported_energy_calculation_reset_refresh(self) -> None:
+        """Test that the refresh threshold is recalculated if imported_energy_wh decreases, simulating a daily reset or counter rollover."""
+        imported_energy_wh = 1000.0  # 1 kWh
+
+        self.openwb_integration.real_total_battery_capacity = CAR_CAPACITY_KWH
+
+        # Initial energy value
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            imported_energy_wh, CHARGE_POLLING_MIN_PERCENT, VIN
+        )
+        assert not should_refresh, "Initial call should not trigger refresh"
+
+        # Increase energy above threshold
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            imported_energy_wh + ENERGY_FOR_MIN_PCT,
+            CHARGE_POLLING_MIN_PERCENT,
+            VIN,
+        )
+        assert should_refresh, "Refresh should trigger when threshold is reached"
+
+        # Simulate daily reset to 0 Wh
+        reset_energy_wh = 0.0
+        # Should NOT trigger refresh immediately
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            reset_energy_wh, CHARGE_POLLING_MIN_PERCENT, VIN
+        )
+        assert not should_refresh, "Reset should not trigger refresh"
+
+        # Next increase above new threshold
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            reset_energy_wh + ENERGY_FOR_MIN_PCT,
+            CHARGE_POLLING_MIN_PERCENT,
+            VIN,
+        )
+        assert should_refresh, "Refresh should trigger after reset and threshold reached"
+
+
     def assert_mqtt_topic(self, topic: str, value: Any) -> None:
         mqtt_map = self.publisher.map
         if topic in mqtt_map:
