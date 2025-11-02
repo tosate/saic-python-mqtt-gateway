@@ -76,6 +76,10 @@ class OpenWBIntegration:
             )
 
     def set_charger_connection_state(self, connected: bool) -> None:
+        if self.charger_connected == connected:
+            # No change, do nothing
+            return
+
         self.charger_connected = connected
         if self.charger_connected:
             LOG.info("OpenWB Integration: Charger connected")
