@@ -171,9 +171,15 @@ class MqttPublisher(Publisher):
                 LOG.debug(
                     f"Vehicle with vin {vin} is connected to its charging station"
                 )
+                charger_connected = True
             else:
                 LOG.debug(
                     f"Vehicle with vin {vin} is disconnected from its charging station"
+                )
+                charger_connected = False
+            if self.command_listener is not None:
+                await self.command_listener.on_charger_connection_state_changed(
+                    vin, charger_connected
                 )
         elif topic in self.vin_by_imported_energy_topic:
             LOG.debug(f"Received message over topic {topic} with payload {payload}")

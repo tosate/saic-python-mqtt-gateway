@@ -218,6 +218,20 @@ class MqttGateway(MqttCommandListener, VehicleHandlerLocator):
             LOG.debug(f"Imported energy for unknown vin {vin} received")
 
     @override
+    async def on_charger_connection_state_changed(
+        self, vin: str, connected: bool
+    ) -> None:
+        vehicle_handler = self.get_vehicle_handler(vin)
+        if not vehicle_handler:
+            LOG.debug(f"Connected state change for unknown vin {vin} received")
+            return
+
+        integration = vehicle_handler.openwb_integration
+        if integration:
+            integration.set_charger_connection_state(connected)
+            LOG.debug(f"Updated connected state for vehicle {vin} to {connected}")
+
+    @override
     async def on_mqtt_global_command_received(
         self, *, topic: str, payload: str
     ) -> None:

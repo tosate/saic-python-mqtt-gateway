@@ -31,6 +31,7 @@ class OpenWBIntegration:
     ) -> None:
         self.__charging_station = charging_station
         self.__publisher = publisher
+        self.charger_connected: bool | None = None
         self.real_total_battery_capacity: float | None = None
         self.last_imported_energy_wh: float | None = None
         self.computed_refresh_by_imported_energy_wh: float | None = None
@@ -74,6 +75,13 @@ class OpenWBIntegration:
                 no_prefix=True,
             )
 
+    def set_charger_connection_state(self, connected: bool) -> None:
+        self.charger_connected = connected
+        if self.charger_connected:
+            LOG.info("OpenWB Integration: Charger connected")
+        else:
+            LOG.info("OpenWB Integration: Charger disconnected")
+
     def should_refresh_by_imported_energy(
         self, imported_energy_wh: float, charge_polling_min_percent: float, vin: str
     ) -> bool:
@@ -83,6 +91,12 @@ class OpenWBIntegration:
         exceeds a threshold based on battery capacity and a minimum percentage.
         If the imported energy decreases (e.g., daily reset), the threshold is recalculated.
         """
+        # Charger connection state might not be available. If disconnected, skip the check.
+        if self.charger_connected is False:
+            LOG.debug(
+                f"Charger for vehicle {vin} is disconnected. Skipping imported energy check."
+            )
+            return False
         # Return False if battery capacity is not available
         if self.real_total_battery_capacity is None:
             LOG.warning(
@@ -97,9 +111,8 @@ class OpenWBIntegration:
         energy_for_min_pct = math.ceil(charge_polling_min_percent * energy_per_percent)
 
         # Initialize the refresh threshold if it hasn't been set yet
-        if (
-            not self.computed_refresh_by_imported_energy_wh
-            or imported_energy_wh < (self.last_imported_energy_wh or 0)
+        if not self.computed_refresh_by_imported_energy_wh or imported_energy_wh < (
+            self.last_imported_energy_wh or 0
         ):
             self.computed_refresh_by_imported_energy_wh = (
                 imported_energy_wh + energy_for_min_pct
@@ -113,7 +126,7 @@ class OpenWBIntegration:
         refresh_needed = False
         if imported_energy_wh >= self.computed_refresh_by_imported_energy_wh:
             LOG.info(
-                f"Imported energy threshold of {self.computed_refresh_by_imported_energy_wh} Wh reached "
+                f"OpenWB Integration: Imported energy threshold of {self.computed_refresh_by_imported_energy_wh} Wh reached "
                 f"(current: {imported_energy_wh} Wh). Triggering vehicle refresh."
             )
             refresh_needed = True

@@ -203,6 +203,18 @@ class TestOpenWBIntegration(unittest.IsolatedAsyncioTestCase):
 
         assert not result, "Should not refresh if capacity is unknown"
 
+    async def test_imported_energy_charger_disconnected(self) -> None:
+        """If charger is disconnected, refresh calculation should be skipped."""
+        self.openwb_integration.charger_connected = False
+
+        should_refresh = self.openwb_integration.should_refresh_by_imported_energy(
+            imported_energy_wh=1000.0,
+            charge_polling_min_percent=CHARGE_POLLING_MIN_PERCENT,
+            vin=VIN,
+        )
+
+        assert not should_refresh, "Should not refresh if charger is disconnected"
+
     async def test_imported_energy_calculation_reset_refresh(self) -> None:
         """Test that the refresh threshold is recalculated if imported_energy_wh decreases, simulating a daily reset or counter rollover."""
         imported_energy_wh = 1000.0  # 1 kWh
