@@ -20,7 +20,7 @@ from publisher.core import MqttCommandListener, Publisher
 from publisher.log_publisher import ConsolePublisher
 from publisher.mqtt_publisher import MqttPublisher
 from saic_api_listener import MqttGatewaySaicApiListener
-from vehicle import RefreshMode, VehicleState
+from vehicle import VehicleState
 from vehicle_info import VehicleInfo
 
 if TYPE_CHECKING:
