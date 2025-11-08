@@ -57,7 +57,7 @@ class VehicleStatusRespPublisher(
     def publish(
         self, vehicle_status: VehicleStatusResp
     ) -> VehicleStatusRespProcessingResult:
-        if vehicle_status.statusTime in (0, 2147483647):
+        if vehicle_status.statusTime in (None, 0, 2147483647):
             _logger.debug("Skipping vehicle status drift check because of invalid timestamp value: %s", vehicle_status.statusTime)
         else:
             vehicle_status_time = datetime.datetime.fromtimestamp(
