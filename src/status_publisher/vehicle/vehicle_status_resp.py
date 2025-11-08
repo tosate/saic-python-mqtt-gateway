@@ -61,7 +61,7 @@ class VehicleStatusRespPublisher(
             _logger.debug("Skipping vehicle status drift check because of invalid timestamp value: %s", vehicle_status.statusTime)
         else:
             vehicle_status_time = datetime.datetime.fromtimestamp(
-                vehicle_status.statusTime, tz=datetime.UTC
+                float(vehicle_status.statusTime), tz=datetime.UTC
             )
             now_time = datetime.datetime.now(tz=datetime.UTC)
             vehicle_status_drift = abs(now_time - vehicle_status_time)
