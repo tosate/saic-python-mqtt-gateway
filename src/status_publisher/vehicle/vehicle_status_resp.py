@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import datetime
+import logging
 from typing import TYPE_CHECKING, Final, override
 
 from saic_ismart_client_ng.api.vehicle import VehicleStatusResp
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
 
     from publisher.core import Publisher
     from vehicle_info import VehicleInfo
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -54,15 +57,23 @@ class VehicleStatusRespPublisher(
     def publish(
         self, vehicle_status: VehicleStatusResp
     ) -> VehicleStatusRespProcessingResult:
-        vehicle_status_time = datetime.datetime.fromtimestamp(
-            vehicle_status.statusTime or 0, tz=datetime.UTC
-        )
-        now_time = datetime.datetime.now(tz=datetime.UTC)
-        vehicle_status_drift = abs(now_time - vehicle_status_time)
+        if vehicle_status.statusTime in (0, 2147483647):
+            _logger.debug("Skipping vehicle status drift check because of invalid timestamp value: %s", vehicle_status.statusTime)
+        else:
+            vehicle_status_time = datetime.datetime.fromtimestamp(
+                vehicle_status.statusTime, tz=datetime.UTC
+            )
+            now_time = datetime.datetime.now(tz=datetime.UTC)
+            vehicle_status_drift = abs(now_time - vehicle_status_time)
+            _logger.debug("Vehicle status timestamp: %s, current UTC time: %s, drift: %s",
+                vehicle_status_time,
+                now_time,
+                vehicle_status_drift
+            )
 
-        if vehicle_status_drift > datetime.timedelta(minutes=15):
-            msg = f"Vehicle status time drifted more than 15 minutes from current time: {vehicle_status_drift}. Server reported {vehicle_status_time}"
-            raise MqttGatewayException(msg)
+            if vehicle_status_drift > datetime.timedelta(minutes=15):
+                msg = f"Vehicle status time drifted more than 15 minutes from current time: {vehicle_status_drift}. Server reported {vehicle_status_time}"
+                raise MqttGatewayException(msg)
 
         basic_vehicle_status = vehicle_status.basicVehicleStatus
         if basic_vehicle_status:
