@@ -75,7 +75,12 @@ class Publisher(ABC):
 
     @abstractmethod
     def publish_json(
-        self, key: str, data: dict[str, Any], no_prefix: bool = False
+        self,
+        key: str,
+        data: dict[str, Any],
+        no_prefix: bool = False,
+        *,
+        retain: bool = True,
     ) -> None:
         raise NotImplementedError
 

@@ -35,11 +35,14 @@ class VehicleDataPublisher[I, O](metaclass=ABCMeta):
         value: Publishable | None,
         validator: Callable[[Publishable], bool] = lambda _: True,
         no_prefix: bool = False,
+        retain: bool = True,
     ) -> tuple[bool, Publishable | None]:
         if value is None or not validator(value):
             return False, None
         actual_topic = topic if no_prefix else self.__get_topic(topic)
-        published = self._publish_directly(topic=actual_topic, value=value)
+        published = self._publish_directly(
+            topic=actual_topic, value=value, retain=retain
+        )
         return published, value
 
     def _transform_and_publish(
@@ -50,15 +53,20 @@ class VehicleDataPublisher[I, O](metaclass=ABCMeta):
         validator: Callable[[T], bool] = lambda _: True,
         transform: Callable[[T], Publishable],
         no_prefix: bool = False,
+        retain: bool = True,
     ) -> tuple[bool, Publishable | None]:
         if value is None or not validator(value):
             return False, None
         actual_topic = topic if no_prefix else self.__get_topic(topic)
         transformed_value = transform(value)
-        published = self._publish_directly(topic=actual_topic, value=transformed_value)
+        published = self._publish_directly(
+            topic=actual_topic, value=transformed_value, retain=retain
+        )
         return published, transformed_value
 
-    def _publish_directly(self, *, topic: str, value: Publishable) -> bool:
+    def _publish_directly(
+        self, *, topic: str, value: Publishable, retain: bool = True
+    ) -> bool:
         published = False
         if isinstance(value, bool):
             self.__publisher.publish_bool(topic, value)
@@ -73,7 +81,7 @@ class VehicleDataPublisher[I, O](metaclass=ABCMeta):
             self.__publisher.publish_str(topic, value)
             published = True
         elif isinstance(value, dict):
-            self.__publisher.publish_json(topic, value)
+            self.__publisher.publish_json(topic, value, retain=retain)
             published = True
         elif isinstance(value, datetime):
             self.__publisher.publish_str(topic, datetime_to_str(value))

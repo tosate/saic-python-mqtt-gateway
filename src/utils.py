@@ -58,6 +58,13 @@ def get_gateway_version() -> str:
         return os.environ.get("RELEASE_VERSION", "unknown")
 
 
+def ensure_datetime_aware(dt: datetime) -> datetime:
+    """Return *dt* with UTC tzinfo if it is naive, otherwise unchanged."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt
+
+
 def datetime_to_str(dt: datetime) -> str:
     return datetime.astimezone(dt, tz=UTC).isoformat()
 

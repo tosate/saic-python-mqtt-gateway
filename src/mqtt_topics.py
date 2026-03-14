@@ -182,4 +182,7 @@ TYRES_REAR_RIGHT_PRESSURE = TYRES + "/rearRightPressure"
 COMMAND = "command"
 COMMAND_ERROR = COMMAND + "/error"
 
+EVENTS = "events"
+EVENTS_VEHICLE_MESSAGE = EVENTS + "/vehicleMessage"
+
 VEHICLES = "vehicles"

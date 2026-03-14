@@ -327,13 +327,19 @@ class HomeAssistantDiscovery(HomeAssistantDiscoveryBase):
         )
         self.__publish_lights_sensors()
 
-        # Command error event
+        # Event entities
         self._publish_event(
             mqtt_topics.COMMAND_ERROR,
             "Command error",
             ["command_error"],
             entity_category="diagnostic",
             icon="mdi:alert-circle",
+        )
+        self._publish_event(
+            mqtt_topics.EVENTS_VEHICLE_MESSAGE,
+            "Vehicle message",
+            ["vehicle_message"],
+            icon="mdi:message-text",
         )
 
         LOG.debug("Completed publishing Home Assistant discovery messages")

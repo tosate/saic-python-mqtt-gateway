@@ -221,8 +221,8 @@ class MqttPublisher(Publisher):
                 vin, imported_energy_wh
             )
 
-    def __publish(self, topic: str, payload: Any) -> None:
-        self.client.publish(topic, payload, retain=True)
+    def __publish(self, topic: str, payload: Any, *, retain: bool = True) -> None:
+        self.client.publish(topic, payload, retain=retain)
 
     @override
     def is_connected(self) -> bool:
@@ -230,10 +230,17 @@ class MqttPublisher(Publisher):
 
     @override
     def publish_json(
-        self, key: str, data: dict[str, Any], no_prefix: bool = False
+        self,
+        key: str,
+        data: dict[str, Any],
+        no_prefix: bool = False,
+        *,
+        retain: bool = True,
     ) -> None:
         payload = self.dict_to_anonymized_json(data)
-        self.__publish(topic=self.get_topic(key, no_prefix), payload=payload)
+        self.__publish(
+            topic=self.get_topic(key, no_prefix), payload=payload, retain=retain
+        )
 
     @override
     def publish_str(self, key: str, value: str, no_prefix: bool = False) -> None:

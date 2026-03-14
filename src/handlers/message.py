@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from saic_ismart_client_ng.exceptions import SaicApiException, SaicLogoutException
 
+from utils import ensure_datetime_aware
 from vehicle import RefreshMode
 
 if TYPE_CHECKING:
@@ -53,10 +54,10 @@ class MessageHandler:
             if (
                 latest_message is not None
                 and latest_message.messageId != self.last_message_id
-                and latest_message.message_time > self.last_message_ts
+                and ensure_datetime_aware(latest_message.message_time) > self.last_message_ts
             ):
                 self.last_message_id = latest_message.messageId
-                self.last_message_ts = latest_message.message_time
+                self.last_message_ts = ensure_datetime_aware(latest_message.message_time)
                 LOG.info(
                     f"{latest_message.title} detected at {latest_message.message_time}"
                 )
@@ -106,7 +107,7 @@ class MessageHandler:
                 oldest_message = self.__get_oldest_message(all_messages)
                 if (
                     oldest_message is not None
-                    and oldest_message.message_time < self.last_message_ts
+                    and ensure_datetime_aware(oldest_message.message_time) < self.last_message_ts
                 ):
                     return all_messages
             except SaicLogoutException:
@@ -173,7 +174,7 @@ class MessageHandler:
     ) -> MessageEntity | None:
         if len(vehicle_start_messages) == 0:
             return None
-        return max(vehicle_start_messages, key=lambda m: m.message_time)
+        return max(vehicle_start_messages, key=lambda m: ensure_datetime_aware(m.message_time))
 
     @staticmethod
     def __get_oldest_message(
@@ -181,4 +182,4 @@ class MessageHandler:
     ) -> MessageEntity | None:
         if len(vehicle_start_messages) == 0:
             return None
-        return min(vehicle_start_messages, key=lambda m: m.message_time)
+        return min(vehicle_start_messages, key=lambda m: ensure_datetime_aware(m.message_time))

@@ -24,7 +24,12 @@ class ConsolePublisher(Publisher):
 
     @override
     def publish_json(
-        self, key: str, data: dict[str, Any], no_prefix: bool = False
+        self,
+        key: str,
+        data: dict[str, Any],
+        no_prefix: bool = False,
+        *,
+        retain: bool = True,
     ) -> None:
         anonymized_json = self.dict_to_anonymized_json(data)
         self.internal_publish(key, anonymized_json)
